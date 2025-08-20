@@ -1,0 +1,163 @@
+/* Styling for the news container */
+.news-container {
+  font-family: 'Roboto', sans-serif;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Ensure body and html are 100% height */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Background color (gradient) */
+body {
+  background: linear-gradient(135deg, hsl(0, 0%, 3%), hsl(0, 0%, 4%)) !important;
+  background-size: cover;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* News item styling */
+.news-item {
+  padding: 20px;
+  margin-bottom: 30px;
+  background-color: #04000c;
+  border-radius: 8px;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #3a50f9; /* Add colored line for creativity */
+  animation: fadeIn 0.6s ease-in-out;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Add hover effect for news item */
+.news-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Ensure that only news content is styled with these rules */
+.news-container h1, .news-container h2, .news-container p {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 10px;
+  text-align: left; /* Ensure left alignment */
+}
+
+.news-container .news-date {
+  font-size: 1rem;
+  color: #e4eeff;
+  margin-bottom: 20px;
+}
+
+.news-container .news-body p {
+  font-size: 1.2rem;
+  color: #e1f7ff;
+  line-height: 1.6;
+}
+
+.news-container .news-item {
+  padding: 20px;
+  margin-bottom: 30px;
+  background-color: #04000c;
+  border-radius: 8px;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Image styling */
+.news-image {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  opacity: 0;
+  animation: fadeInImage 1s ease forwards;
+}
+
+/* Link styling */
+.news-link {
+  display: inline-block;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #3a50f9;
+  text-decoration: none;
+  margin-top: 10px;
+  transition: color 0.3s ease, text-decoration 0.3s ease;
+}
+
+.news-link:hover {
+  text-decoration: underline;
+  color: #2a3eb1;
+}
+
+/* Divider between each news item */
+.news-item:not(:last-child)::after {
+  content: "";
+  display: block;
+  margin-top: 30px;
+  border-bottom: 1px solid #ddd;
+}
+
+/* Fade-in animation for the news item */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade-in animation for images */
+@keyframes fadeInImage {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Responsiveness for smaller screens */
+@media (max-width: 768px) {
+  .news-title {
+    font-size: 1.5rem;
+  }
+
+  .news-body p {
+    font-size: 1rem;
+  }
+
+  .news-item {
+    padding: 15px;
+  }
+}
+
+/* Optional smooth fade-in animation for the entire container */
+.news-container {
+  opacity: 0;
+  animation: fadeInContainer 1s ease forwards;
+}
+
+@keyframes fadeInContainer {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Additional styles for the news body */
+.news-body summary{cursor:pointer;color:#3a50f9;font-weight:600;margin-bottom:8px}
+.news-body[open] summary{margin-bottom:12px}
+.news-body > *:not(summary){margin-top:0}
