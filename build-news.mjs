@@ -11,6 +11,12 @@ const SPACE = process.env.CONTENTFUL_SPACE_ID;
 const TOKEN = process.env.CONTENTFUL_CDA_TOKEN;
 if (!SPACE || !TOKEN) throw new Error("Set CONTENTFUL_SPACE_ID and CONTENTFUL_CDA_TOKEN");
 
+// Where to write generated files (defaults to repo root)
+const OUT_DIR = process.env.OUTPUT_DIR || ".";
+
+// Canonical site origin
+const SITE = "https://esegames.com";
+
 // -------- Helpers --------
 const slugify = (s = "") =>
   (s || "").toString().trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -66,9 +72,7 @@ function renderNewsImage(img, i = 1) {
     `decoding="async"`,
     `fetchpriority="${i === 0 ? "high" : "low"}"`
   ];
-  if (img.width && img.height) {
-    attrs.push(`width="${img.width}"`, `height="${img.height}"`);
-  }
+  if (img.width && img.height) attrs.push(`width="${img.width}"`, `height="${img.height}"`);
   return `<img ${attrs.join(" ")}>`;
 }
 
@@ -226,7 +230,7 @@ for (const it of data.items || []) {
   const head = `<!doctype html><html lang="en"><head>
 <meta charset="utf-8">
 <title>${esc(f.title || "News")} — ĚSĚGAMES</title>
-<link rel="canonical" href="https://esegames.com/news/${slug}/">
+<link rel="canonical" href="${SITE}/news/${slug}/">
 <meta name="description" content="${metaDesc}">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="alternate" type="application/rss+xml" title="ÉSÈGAMES News" href="/news.xml">
@@ -255,24 +259,30 @@ ${footerHTML || ""}
 }
 
 // -------- sitemap.xml --------
-const urls = [
-  "https://esegames.com/NEWS",
-  ...(data.items || []).map(it => {
-    const f = it.fields || {};
-    const slug = f.slug ? slugify(f.slug) : slugify(f.title || it.sys.id);
-    return `https://esegames.com/news/${slug}/`;
-  })
-];
-const today = new Date().toISOString().slice(0, 10);
+const today = new Date().toISOString().slice(0,10);
+
+// prefer clean URLs; keep in sync with your routing
+const staticPaths = ["/", "/NEWS", "/GAMES", "/ABOUT-US", "/THE-TEAMS", "/CONNECT-WITH-US"];
+const staticEntries = staticPaths.map(p => ({ loc: `${SITE}${p}`, lastmod: today }));
+
+const newsEntries = (data.items || []).map(it => {
+  const f = it.fields || {};
+  const slug = f.slug ? slugify(f.slug) : slugify(f.title || it.sys.id);
+  const lastmod = f.date ? new Date(f.date).toISOString().slice(0,10) : today;
+  return { loc: `${SITE}/news/${slug}/`, lastmod };
+});
+
+const all = [...staticEntries, ...newsEntries];
+
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.map(u => `<url><loc>${u}</loc><lastmod>${today}</lastmod></url>`).join("\n")}
+${all.map(({loc,lastmod}) => `<url><loc>${loc}</loc><lastmod>${lastmod}</lastmod></url>`).join("\n")}
 </urlset>`;
-fs.writeFileSync("sitemap.xml", sitemap);
-console.log("Wrote sitemap.xml with", urls.length, "URLs");
+
+fs.writeFileSync(path.join(OUT_DIR, "sitemap.xml"), sitemap);
+console.log("Wrote sitemap.xml with", all.length, "URLs to", path.join(OUT_DIR, "sitemap.xml"));
 
 // -------- news.xml (RSS 2.0) --------
-const SITE = "https://esegames.com";
 const rssItems = (data.items || []).map(it => {
   const f = it.fields || {};
   const slug = f.slug ? slugify(f.slug) : slugify(f.title || it.sys.id);
@@ -301,7 +311,8 @@ const rss = `<?xml version="1.0" encoding="UTF-8"?>
 ${rssItems}
   </channel>
 </rss>`;
-fs.writeFileSync("news.xml", rss);
-console.log("Wrote news.xml");
+
+fs.writeFileSync(path.join(OUT_DIR, "news.xml"), rss);
+console.log("Wrote news.xml to", path.join(OUT_DIR, "news.xml"));
 
 console.log("News built complete. Items:", data.items?.length || 0);
