@@ -39,13 +39,38 @@ if (!data) throw new Error(`Could not fetch entries. Checked envs: ${envCandidat
 console.log("Using Contentful env:", ENV_USED);
 console.log("items returned:", data.items?.length || 0);
 
-// Build asset map
+// -------- Build asset map (keep width/height if available) --------
 const assetMap = new Map(
-  (data.includes?.Asset || []).map(a => [
-    a.sys.id,
-    { url: `https:${a.fields.file?.url || ""}`, title: a.fields.title || "", desc: a.fields.description || "" }
-  ])
+  (data.includes?.Asset || []).map(a => {
+    const file = a.fields.file || {};
+    const details = file.details || {};
+    const imgDims = details.image || {};
+    return [a.sys.id, {
+      url: `https:${file.url || ""}`,
+      title: a.fields.title || "",
+      desc: a.fields.description || "",
+      width: imgDims.width || null,
+      height: imgDims.height || null
+    }];
+  })
 );
+
+// -------- Img helper (adds lazy/eager, fetchpriority, preserves w/h) --------
+function renderNewsImage(img, i = 1) {
+  if (!img?.src) return "";
+  const attrs = [
+    `src="${img.src}"`,
+    `alt="${esc(img.alt || "")}"`,
+    `class="news-image"`,
+    `loading="${i === 0 ? "eager" : "lazy"}"`,
+    `decoding="async"`,
+    `fetchpriority="${i === 0 ? "high" : "low"}"`
+  ];
+  if (img.width && img.height) {
+    attrs.push(`width="${img.width}"`, `height="${img.height}"`);
+  }
+  return `<img ${attrs.join(" ")}>`;
+}
 
 // -------- Rich Text renderer (marks, headings, lists, links, images) --------
 function renderRich(rt) {
@@ -85,14 +110,16 @@ function renderRich(rt) {
       const asset = id ? assetMap.get(id) : null;
       if (!asset?.url) return "";
       const alt = esc(asset.title || asset.desc || "");
-      return `<figure><img src="${asset.url}" alt="${alt}" class="news-image"/></figure>`;
+      const wh = (asset.width && asset.height) ? ` width="${asset.width}" height="${asset.height}"` : "";
+      return `<figure><img src="${asset.url}" alt="${alt}" class="news-image" loading="lazy" decoding="async"${wh}></figure>`;
     }
+
     return renderNodes(node.content);
   }
   return renderNodes(rt.content);
 }
 
-// Split RT into lead (first paragraph) + rest
+// -------- Split RT into lead (first paragraph) + rest --------
 function splitLead(rt, take = 1) {
   const outLead = [], outRest = [];
   let taken = 0;
@@ -106,7 +133,7 @@ function splitLead(rt, take = 1) {
   };
 }
 
-// plain text snippet for meta description
+// -------- plain text snippet for meta description --------
 function richToPlain(rt, max = 155) {
   let buf = "";
   (function walk(n){
@@ -127,13 +154,17 @@ const footerHTML = footerMatch ? footerMatch[1] : "";
 console.log("Header found?", Boolean(headerHTML), "Footer found?", Boolean(footerHTML));
 
 // -------- Build list cards and inject into NEWS.html --------
-const cards = (data.items || []).map(it => {
+const cards = (data.items || []).map((it, i) => {
   const f = it.fields || {};
   const imgObj = f.image ? assetMap.get(f.image.sys.id) : null;
-  const img = imgObj?.url || "";
+  const imgMeta = imgObj ? {
+    src: imgObj.url,
+    alt: f.title || imgObj.title,
+    width: imgObj.width,
+    height: imgObj.height
+  } : null;
   const d = f.date ? new Date(f.date).toISOString().slice(0, 10) : "";
   const slug = f.slug ? slugify(f.slug) : slugify(f.title || it.sys.id);
-
   const { lead, rest } = splitLead(f.body, 1);
   const leadHTML = renderRich(lead);
   const restHTML = renderRich(rest);
@@ -143,7 +174,7 @@ const cards = (data.items || []).map(it => {
 <article class="news-item">
   <a href="/news/${slug}/"><h2 class="news-title">${esc(f.title || "Untitled")}</h2></a>
   <p class="news-date">${d}</p>
-  ${img ? `<img src="${img}" alt="${esc(f.title || "")}" class="news-image">` : ""}
+  ${imgMeta ? renderNewsImage(imgMeta, i) : ""}
   ${leadHTML ? `<div class="news-excerpt">${leadHTML}</div>` : ""}
   ${hasMore ? `
   <details class="news-collapsible">
@@ -158,6 +189,13 @@ let newsPage = newsTpl.replace(
   /(<!-- START:NEWS-LIST -->)([\s\S]*?)(<!-- END:NEWS-LIST -->)/,
   `$1\n${cards}\n$3`
 );
+
+// ensure RSS <link> exists in NEWS head
+if (!/rel="alternate"\s+type="application\/rss\+xml"/i.test(newsPage)) {
+  newsPage = newsPage.replace(/<\/head>/i,
+    `  <link rel="alternate" type="application/rss+xml" title="ÉSÈGAMES News" href="/news.xml">\n</head>`);
+}
+
 fs.writeFileSync("NEWS.html", newsPage);
 console.log("Injected", (data.items || []).length, "cards into NEWS.html");
 
@@ -165,7 +203,7 @@ console.log("Injected", (data.items || []).length, "cards into NEWS.html");
 for (const it of data.items || []) {
   const f = it.fields || {};
   const imgObj = f.image ? assetMap.get(f.image.sys.id) : null;
-  const img = imgObj?.url || "";
+  const hero = imgObj ? { src: imgObj.url, alt: f.title || imgObj.title, width: imgObj.width, height: imgObj.height } : null;
   const iso = f.date ? new Date(f.date).toISOString() : "";
   const dateShort = iso ? iso.slice(0, 10) : "";
   const slug = f.slug ? slugify(f.slug) : slugify(f.title || it.sys.id);
@@ -178,7 +216,7 @@ for (const it of data.items || []) {
     "headline": f.title || "Untitled",
     "datePublished": iso || undefined,
     "dateModified": iso || undefined,
-    "image": img ? [img] : [],
+    "image": hero?.src ? [hero.src] : [],
     "author": { "@type": "Organization", "name": "ĚSĚGAMES" },
     "publisher": { "@type": "Organization", "name": "ĚSĚGAMES" }
   };
@@ -191,6 +229,7 @@ for (const it of data.items || []) {
 <link rel="canonical" href="https://esegames.com/news/${slug}/">
 <meta name="description" content="${metaDesc}">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="alternate" type="application/rss+xml" title="ÉSÈGAMES News" href="/news.xml">
 <link rel="stylesheet" href="/nicepage.css">
 <link rel="stylesheet" href="/index.css">
 <link rel="stylesheet" href="/FAQstyles.css">
@@ -203,7 +242,7 @@ ${headerHTML || ""}
 <main class="article">
   <h1>${esc(f.title || "Untitled")}</h1>
   <p class="news-date">${dateShort}</p>
-  ${img ? `<img class="news-image" src="${img}" alt="${esc(f.title || "")}">` : ""}
+  ${hero ? renderNewsImage(hero, 0) : ""}
   <article class="news-body">${renderRich(f.body)}</article>
   ${f.link ? `<p><a class="news-link" href="${esc(f.link)}" target="_blank" rel="noopener">Source</a></p>` : ""}
 </main>
@@ -217,7 +256,7 @@ ${footerHTML || ""}
 
 // -------- sitemap.xml --------
 const urls = [
-  "https://esegames.com/NEWS.html",
+  "https://esegames.com/NEWS",
   ...(data.items || []).map(it => {
     const f = it.fields || {};
     const slug = f.slug ? slugify(f.slug) : slugify(f.title || it.sys.id);
@@ -231,5 +270,38 @@ ${urls.map(u => `<url><loc>${u}</loc><lastmod>${today}</lastmod></url>`).join("\
 </urlset>`;
 fs.writeFileSync("sitemap.xml", sitemap);
 console.log("Wrote sitemap.xml with", urls.length, "URLs");
+
+// -------- news.xml (RSS 2.0) --------
+const SITE = "https://esegames.com";
+const rssItems = (data.items || []).map(it => {
+  const f = it.fields || {};
+  const slug = f.slug ? slugify(f.slug) : slugify(f.title || it.sys.id);
+  const url = `${SITE}/news/${slug}/`;
+  const title = esc(f.title || "Untitled");
+  const pub = f.date ? new Date(f.date).toUTCString() : new Date().toUTCString();
+  const desc = richToPlain(f.body, 300);
+  return `
+  <item>
+    <title>${title}</title>
+    <link>${url}</link>
+    <guid isPermaLink="false">${it.sys.id}</guid>
+    <pubDate>${pub}</pubDate>
+    <description><![CDATA[${desc}]]></description>
+  </item>`.trim();
+}).join("\n");
+
+const rss = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>ÉSÈGAMES News</title>
+    <link>${SITE}/NEWS</link>
+    <description>Updates from ÉSÈGAMES</description>
+    <language>en</language>
+    <atom:link href="${SITE}/news.xml" rel="self" type="application/rss+xml"/>
+${rssItems}
+  </channel>
+</rss>`;
+fs.writeFileSync("news.xml", rss);
+console.log("Wrote news.xml");
 
 console.log("News built complete. Items:", data.items?.length || 0);
