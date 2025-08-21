@@ -1,0 +1,7 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "redirects": [
+    { "source": "https://www.esegames.com/:path*", "destination": "https://esegames.com/:path*", "permanent": true }
+  ]
+}
