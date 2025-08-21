@@ -1,163 +1,149 @@
-/* Styling for the news container */
-.news-container {
-  font-family: 'Roboto', sans-serif;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+/* Page container */
+.news-container{
+  font-family:'Roboto',sans-serif;
+  max-width:1100px;margin:0 auto;padding:24px 16px;
 }
 
-/* Ensure body and html are 100% height */
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
+/* Bright cards on dark page */
+.news-item{
+  background:#f7f9ff;                /* light card */
+  color:#0f172a;                      /* slate-900 */
+  border-left:5px solid #3a50f9;
+  border-radius:14px;
+  padding:22px;
+  margin:20px 0 32px;
+  box-shadow:0 8px 20px rgba(0,0,0,.22);
+  transition:transform .25s ease, box-shadow .25s ease;
+}
+.news-item:hover{ transform:translateY(-3px); box-shadow:0 12px 28px rgba(0,0,0,.28); }
+
+/* Ensure Nicepage globals don't override */
+.news-item h1,.news-item h2,.news-item h3,.news-item h4,
+.news-item p,.news-item li{ color:#0f172a !important; text-align:left !important; }
+.news-item p{ font-weight:400 !important; line-height:1.7; font-size:1.06rem; margin:.6rem 0; }
+
+/* Title + date */
+.news-title{ font-size:1.75rem; font-weight:800; margin:0 0 .25rem; }
+.news-item .news-title a,.news-item a.news-title{ color:#0f172a; text-decoration:none; }
+.news-date{ color:#475569; font-size:.95rem; margin-bottom:12px; }
+
+/* Image */
+.news-image{ width:100%; height:auto; border-radius:12px; margin:10px 0 14px; box-shadow:0 6px 14px rgba(0,0,0,.12); }
+
+/* Excerpt (first paragraph) */
+.news-excerpt p{ margin-top:0; }
+
+/* Collapsible placed at bottom */
+.news-collapsible{ margin-top:10px; }
+.news-summary{
+  cursor:pointer;
+  display:inline-flex; align-items:center; gap:.5rem;
+  padding:7px 12px; border-radius:10px;
+  background:#ffd89a;       /* warm cream/orange */
+  color:#1f2937; font-weight:700; border:1px solid #f59e0b;
+  box-shadow:0 2px 6px rgba(0,0,0,.08);
+}
+.news-summary::marker{ content:""; }     /* hide default triangle in some UA */
+.news-collapsible[open] .news-summary{ margin-bottom:10px; }
+.news-body{ margin-top:0; }
+.news-body h1{ font-size:1.5rem; margin:.75rem 0 .35rem; font-weight:800; }
+.news-body h2{ font-size:1.3rem; margin:.7rem 0 .35rem; font-weight:800; }
+.news-body h3{ font-size:1.15rem; margin:.6rem 0 .3rem; font-weight:800; }
+.news-body ul,.news-body ol{ margin:.6rem 0 .6rem 1.2rem; }
+.news-body a{ color:#0b57d0; text-decoration:underline; }
+.news-body a:hover{ text-decoration:none; }
+
+/* External link under card */
+.news-source{ margin-top:12px; }
+.news-source a{
+  color:#3a50f9; text-decoration:none; font-weight:400;
+}
+.news-source a:hover{ text-decoration:underline; }
+
+/* Per-article pages */
+.article .news-link{ color:#3a50f9; font-weight:700; text-decoration:none; }
+.article .news-link:hover{ text-decoration:underline; }
+
+/* Responsive */
+@media (max-width: 768px){
+  .news-item{ padding:16px; border-radius:12px; }
+  .news-title{ font-size:1.45rem; }
+  .news-item p{ font-size:1rem; }
 }
 
-/* Background color (gradient) */
-body {
-  background: linear-gradient(135deg, hsl(0, 0%, 3%), hsl(0, 0%, 4%)) !important;
-  background-size: cover;
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
+/* --- Adjustments: Read more bottom-left + clearer date --- */
+
+/* date: darker + bolder for contrast */
+.news-date{
+  color:#d85904;          /* slate-700 */
+  font-weight:600;
+  letter-spacing:.2px;
 }
 
-/* News item styling */
-.news-item {
-  padding: 20px;
-  margin-bottom: 30px;
-  background-color: #04000c;
-  border-radius: 8px;
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
-  border-left: 4px solid #3a50f9; /* Add colored line for creativity */
-  animation: fadeIn 0.6s ease-in-out;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+/* force the Read more + External source to align left (Nicepage can center things) */
+.news-item .news-collapsible,
+.news-item .news-source{
+  text-align:left !important;
 }
 
-/* Add hover effect for news item */
-.news-item:hover {
-  transform: translateY(-5px);
-  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+/* keep the summary button snug to the left */
+.news-summary{
+  margin-left:0;
+  display:inline-flex;    /* keep it sized to content */
 }
 
-/* Ensure that only news content is styled with these rules */
-.news-container h1, .news-container h2, .news-container p {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 10px;
-  text-align: left; /* Ensure left alignment */
+/* give a bit more spacing before the toggle at the very bottom */
+.news-collapsible{ margin-top:14px; }
+
+
+/* --- Force the date style (Nicepage can override) --- */
+.news-item .news-date{
+  color:#520606 !important;         /* darker, visible */
+  font-weight:700 !important;
+  letter-spacing:.2px;
+  margin:2px 0 14px;
 }
 
-.news-container .news-date {
-  font-size: 1rem;
-  color: #e4eeff;
-  margin-bottom: 20px;
+/* --- Make the whole card left-aligned, not centered by Nicepage --- */
+.news-item{ text-align:left !important; }
+.news-item *{ text-align:inherit; }
+
+/* --- Put “Read more” at the BOTTOM-LEFT of the content --- */
+.news-collapsible{
+  display:flex;
+  flex-direction:column;
 }
-
-.news-container .news-body p {
-  font-size: 1.2rem;
-  color: #e1f7ff;
-  line-height: 1.6;
+.news-collapsible > .news-body{ order:1; }         /* content first */
+.news-collapsible > summary{
+  order:2;                                          /* summary last (visually) */
+  align-self:flex-start;                            /* left edge */
+  margin-top:12px;
 }
+.news-item .news-summary{ margin-left:0 !important; }
 
-.news-container .news-item {
-  padding: 20px;
-  margin-bottom: 30px;
-  background-color: #04000c;
-  border-radius: 8px;
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+/* --- Cream / light-orange button style --- */
+.news-summary{
+  background:#f7c67b;
+  border:1px solid #f7c67b;
+  color:#1f2937;
+  font-weight:700;
+  padding:8px 12px;
+  border-radius:8px;
 }
+.news-summary:hover{ filter:brightness(0.97); }
 
-/* Image styling */
-.news-image {
-  width: 100%;
-  height: auto;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  opacity: 0;
-  animation: fadeInImage 1s ease forwards;
+
+
+/* Put the summary at the bottom-left, content above it */
+.news-body{
+  display:flex;
+  flex-direction:column;
 }
-
-/* Link styling */
-.news-link {
-  display: inline-block;
-  font-size: 1rem;
-  font-weight: 500;
-  color: #3a50f9;
-  text-decoration: none;
-  margin-top: 10px;
-  transition: color 0.3s ease, text-decoration 0.3s ease;
+.news-body > summary{
+  order:2;                 /* after content */
+  align-self:flex-start;   /* left */
+  margin-top:12px;
 }
-
-.news-link:hover {
-  text-decoration: underline;
-  color: #2a3eb1;
+.news-body > :not(summary){
+  order:1;                 /* content first */
 }
-
-/* Divider between each news item */
-.news-item:not(:last-child)::after {
-  content: "";
-  display: block;
-  margin-top: 30px;
-  border-bottom: 1px solid #ddd;
-}
-
-/* Fade-in animation for the news item */
-@keyframes fadeIn {
-  0% {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Fade-in animation for images */
-@keyframes fadeInImage {
-  0% {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* Responsiveness for smaller screens */
-@media (max-width: 768px) {
-  .news-title {
-    font-size: 1.5rem;
-  }
-
-  .news-body p {
-    font-size: 1rem;
-  }
-
-  .news-item {
-    padding: 15px;
-  }
-}
-
-/* Optional smooth fade-in animation for the entire container */
-.news-container {
-  opacity: 0;
-  animation: fadeInContainer 1s ease forwards;
-}
-
-@keyframes fadeInContainer {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-/* Additional styles for the news body */
-.news-body summary{cursor:pointer;color:#3a50f9;font-weight:600;margin-bottom:8px}
-.news-body[open] summary{margin-bottom:12px}
-.news-body > *:not(summary){margin-top:0}

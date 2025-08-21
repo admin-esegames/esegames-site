@@ -13,12 +13,7 @@ if (!SPACE || !TOKEN) throw new Error("Set CONTENTFUL_SPACE_ID and CONTENTFUL_CD
 
 // -------- Helpers --------
 const slugify = (s = "") =>
-  (s || "")
-    .toString()
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
+  (s || "").toString().trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
 const esc = (s = "") =>
   (s || "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
@@ -31,22 +26,16 @@ let data = null;
 let ENV_USED = null;
 for (const envId of envCandidates) {
   const base = `https://cdn.contentful.com/spaces/${SPACE}/environments/${envId}`;
-  const url = `${base}/entries?content_type=newsBlog&order=-fields.date&include=2&limit=1000`;
+  const url  = `${base}/entries?content_type=newsBlog&order=-fields.date&include=2&limit=1000`;
   console.log("Trying Contentful env:", envId, "→", url);
   const res = await fetch(url, { headers: { Authorization: `Bearer ${TOKEN}` } });
   console.log("HTTP", res.status, "for env", envId);
-  if (res.ok) {
-    data = await res.json();
-    ENV_USED = envId;
-    break;
-  }
+  if (res.ok) { data = await res.json(); ENV_USED = envId; break; }
   if (res.status === 401 || res.status === 403) {
     throw new Error("Auth error from Contentful. Use a Content Delivery API token with access to this environment.");
   }
 }
-if (!data) {
-  throw new Error(`Could not fetch entries. Checked envs: ${envCandidates.join(", ")}. Verify your environment ID and content type "newsBlog".`);
-}
+if (!data) throw new Error(`Could not fetch entries. Checked envs: ${envCandidates.join(", ")}. Verify your environment ID and content type "newsBlog".`);
 console.log("Using Contentful env:", ENV_USED);
 console.log("items returned:", data.items?.length || 0);
 
@@ -54,11 +43,7 @@ console.log("items returned:", data.items?.length || 0);
 const assetMap = new Map(
   (data.includes?.Asset || []).map(a => [
     a.sys.id,
-    {
-      url: `https:${a.fields.file?.url || ""}`,
-      title: a.fields.title || "",
-      desc: a.fields.description || ""
-    }
+    { url: `https:${a.fields.file?.url || ""}`, title: a.fields.title || "", desc: a.fields.description || "" }
   ])
 );
 
@@ -87,10 +72,10 @@ function renderRich(rt) {
       return `<h${level}>${renderNodes(node.content)}</h${level}>`;
     }
     if (t === "unordered-list") return `<ul>${renderNodes(node.content)}</ul>`;
-    if (t === "ordered-list") return `<ol>${renderNodes(node.content)}</ol>`;
-    if (t === "list-item") return `<li>${renderNodes(node.content)}</li>`;
-    if (t === "blockquote") return `<blockquote>${renderNodes(node.content)}</blockquote>`;
-    if (t === "hr") return `<hr/>`;
+    if (t === "ordered-list")   return `<ol>${renderNodes(node.content)}</ol>`;
+    if (t === "list-item")      return `<li>${renderNodes(node.content)}</li>`;
+    if (t === "blockquote")     return `<blockquote>${renderNodes(node.content)}</blockquote>`;
+    if (t === "hr")             return `<hr/>`;
     if (t === "hyperlink") {
       const href = node.data?.uri ? esc(node.data.uri) : "#";
       return `<a href="${href}" target="_blank" rel="noopener">${renderNodes(node.content)}</a>`;
@@ -107,10 +92,24 @@ function renderRich(rt) {
   return renderNodes(rt.content);
 }
 
+// Split RT into lead (first paragraph) + rest
+function splitLead(rt, take = 1) {
+  const outLead = [], outRest = [];
+  let taken = 0;
+  for (const node of rt?.content || []) {
+    if (taken < take && node.nodeType === "paragraph") { outLead.push(node); taken++; continue; }
+    outRest.push(node);
+  }
+  return {
+    lead: { nodeType: "document", content: outLead },
+    rest: { nodeType: "document", content: outRest }
+  };
+}
+
 // plain text snippet for meta description
 function richToPlain(rt, max = 155) {
   let buf = "";
-  (function walk(n) {
+  (function walk(n){
     if (!n || buf.length >= max) return;
     if (Array.isArray(n)) { n.forEach(walk); return; }
     if (n.nodeType === "text") buf += n.value || "";
@@ -135,16 +134,23 @@ const cards = (data.items || []).map(it => {
   const d = f.date ? new Date(f.date).toISOString().slice(0, 10) : "";
   const slug = f.slug ? slugify(f.slug) : slugify(f.title || it.sys.id);
 
+  const { lead, rest } = splitLead(f.body, 1);
+  const leadHTML = renderRich(lead);
+  const restHTML = renderRich(rest);
+  const hasMore = rest?.content?.length > 0;
+
   return `
 <article class="news-item">
   <a href="/news/${slug}/"><h2 class="news-title">${esc(f.title || "Untitled")}</h2></a>
   <p class="news-date">${d}</p>
   ${img ? `<img src="${img}" alt="${esc(f.title || "")}" class="news-image">` : ""}
-  <details class="news-body">
-    <summary>Read more</summary>
-    ${renderRich(f.body)}
-  </details>
-  ${f.link ? `<a class="news-link" href="${esc(f.link)}" target="_blank" rel="noopener">External source</a>` : ""}
+  ${leadHTML ? `<div class="news-excerpt">${leadHTML}</div>` : ""}
+  ${hasMore ? `
+  <details class="news-collapsible">
+    <summary class="news-summary">Read more</summary>
+    <div class="news-body">${restHTML}</div>
+  </details>` : ""}
+  ${f.link ? `<p class="news-source"><a href="${esc(f.link)}" target="_blank" rel="noopener">External source</a></p>` : ""}
 </article>`.trim();
 }).join("\n");
 
