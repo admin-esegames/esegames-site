@@ -147,3 +147,20 @@
 .news-body > :not(summary){
   order:1;                 /* content first */
 }
+
+
+/* NEWS title override */
+#main-content .page-title{
+  color:#FFD166 !important;                 /* pick your color */
+  -webkit-text-fill-color:#FFD166 !important;/* beats gradient text */
+  background:none !important;                /* cancel bg-clip tricks */
+  -webkit-background-clip:initial !important;
+  text-transform:none !important;            /* stop forced uppercase */
+  margin:0.5rem 0 1.25rem;
+  line-height:1.2;
+}
+
+/* Image aspect ratio */
+.news-image{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:12px}
+
+#main-content .page-title{ color:#fff !important; }
