@@ -172,7 +172,7 @@ for (const it of data.items) {
 <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
 </head><body>`;
 
-  const body = `
+const body = `
 ${headerHTML || ""}
 <main class="article">
   <h1>${esc(f.title || "Untitled")}</h1>
@@ -182,7 +182,9 @@ ${headerHTML || ""}
   ${f.link ? `<p><a class="news-link" href="${esc(f.link)}" target="_blank" rel="noopener">Source</a></p>` : ""}
 </main>
 ${footerHTML || ""}
+<script src="/FAQscript.js"></script>
 </body></html>`;
+
 
   fs.writeFileSync(path.join(dir, "index.html"), head + body);
 }
