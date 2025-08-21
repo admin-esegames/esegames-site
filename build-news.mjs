@@ -1,6 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 
+console.log("SPACE set?", Boolean(process.env.CONTENTFUL_SPACE_ID));
+console.log("TOKEN set?", Boolean(process.env.CONTENTFUL_CDA_TOKEN));
+
+
 // -------- Config from env --------
 const SPACE = process.env.CONTENTFUL_SPACE_ID;
 const TOKEN = process.env.CONTENTFUL_CDA_TOKEN;
@@ -206,3 +210,4 @@ ${urls.map(u => `<url><loc>${u}</loc><lastmod>${today}</lastmod></url>`).join("\
 fs.writeFileSync("sitemap.xml", sitemap);
 
 console.log("News built:", data.items.length);
+
