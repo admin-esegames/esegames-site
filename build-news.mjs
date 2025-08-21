@@ -1,18 +1,18 @@
 import fs from "node:fs";
 import path from "node:path";
 
+// --- Debug: confirm env vars are visible to Vercel build ---
 console.log("SPACE set?", Boolean(process.env.CONTENTFUL_SPACE_ID));
 console.log("TOKEN set?", Boolean(process.env.CONTENTFUL_CDA_TOKEN));
-
+console.log("OPTIONAL CONTENTFUL_ENV =", process.env.CONTENTFUL_ENV || "(not set)");
 
 // -------- Config from env --------
 const SPACE = process.env.CONTENTFUL_SPACE_ID;
 const TOKEN = process.env.CONTENTFUL_CDA_TOKEN;
-const ENV = "master";
 if (!SPACE || !TOKEN) throw new Error("Set CONTENTFUL_SPACE_ID and CONTENTFUL_CDA_TOKEN");
 
 // -------- Helpers --------
-const slugify = (s="") =>
+const slugify = (s = "") =>
   (s || "")
     .toString()
     .trim()
@@ -20,19 +20,37 @@ const slugify = (s="") =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 
-const esc = (s="") =>
-  s.replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const esc = (s = "") =>
+  (s || "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 
-const base = `https://cdn.contentful.com/spaces/${SPACE}/environments/${ENV}`;
+// -------- Fetch (try envs) --------
+const ENV_FROM_VAR = process.env.CONTENTFUL_ENV || "master";
+const envCandidates = Array.from(new Set([ENV_FROM_VAR, "master", "main"]));
 
-// -------- Fetch --------
-const res = await fetch(
-  `${base}/entries?content_type=newsBlog&order=-fields.date&include=2&limit=1000`,
-  { headers: { Authorization: `Bearer ${TOKEN}` } }
-);
-if (!res.ok) throw new Error(`Contentful error ${res.status}`);
-const data = await res.json();
+let data = null;
+let ENV_USED = null;
+for (const envId of envCandidates) {
+  const base = `https://cdn.contentful.com/spaces/${SPACE}/environments/${envId}`;
+  const url = `${base}/entries?content_type=newsBlog&order=-fields.date&include=2&limit=1000`;
+  console.log("Trying Contentful env:", envId, "→", url);
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${TOKEN}` } });
+  console.log("HTTP", res.status, "for env", envId);
+  if (res.ok) {
+    data = await res.json();
+    ENV_USED = envId;
+    break;
+  }
+  if (res.status === 401 || res.status === 403) {
+    throw new Error("Auth error from Contentful. Use a Content Delivery API token with access to this environment.");
+  }
+}
+if (!data) {
+  throw new Error(`Could not fetch entries. Checked envs: ${envCandidates.join(", ")}. Verify your environment ID and content type "newsBlog".`);
+}
+console.log("Using Contentful env:", ENV_USED);
+console.log("items returned:", data.items?.length || 0);
 
+// Build asset map
 const assetMap = new Map(
   (data.includes?.Asset || []).map(a => [
     a.sys.id,
@@ -47,7 +65,6 @@ const assetMap = new Map(
 // -------- Rich Text renderer (marks, headings, lists, links, images) --------
 function renderRich(rt) {
   if (!rt?.content) return "";
-
   const renderNodes = nodes => (nodes || []).map(renderNode).join("");
   function renderNode(node) {
     const t = node.nodeType;
@@ -85,18 +102,15 @@ function renderRich(rt) {
       const alt = esc(asset.title || asset.desc || "");
       return `<figure><img src="${asset.url}" alt="${alt}" class="news-image"/></figure>`;
     }
-
-    // Fallback: render children
     return renderNodes(node.content);
   }
-
   return renderNodes(rt.content);
 }
 
 // plain text snippet for meta description
 function richToPlain(rt, max = 155) {
   let buf = "";
-  (function walk(n){
+  (function walk(n) {
     if (!n || buf.length >= max) return;
     if (Array.isArray(n)) { n.forEach(walk); return; }
     if (n.nodeType === "text") buf += n.value || "";
@@ -111,9 +125,10 @@ const headerMatch = newsTpl.match(/(<header[\s\S]*?<\/header>)/i);
 const footerMatch = newsTpl.match(/(<footer[\s\S]*?<\/footer>)/i);
 const headerHTML = headerMatch ? headerMatch[1] : "";
 const footerHTML = footerMatch ? footerMatch[1] : "";
+console.log("Header found?", Boolean(headerHTML), "Footer found?", Boolean(footerHTML));
 
 // -------- Build list cards and inject into NEWS.html --------
-const cards = data.items.map(it => {
+const cards = (data.items || []).map(it => {
   const f = it.fields || {};
   const imgObj = f.image ? assetMap.get(f.image.sys.id) : null;
   const img = imgObj?.url || "";
@@ -138,9 +153,10 @@ let newsPage = newsTpl.replace(
   `$1\n${cards}\n$3`
 );
 fs.writeFileSync("NEWS.html", newsPage);
+console.log("Injected", (data.items || []).length, "cards into NEWS.html");
 
 // -------- Build per-article pages --------
-for (const it of data.items) {
+for (const it of data.items || []) {
   const f = it.fields || {};
   const imgObj = f.image ? assetMap.get(f.image.sys.id) : null;
   const img = imgObj?.url || "";
@@ -176,7 +192,7 @@ for (const it of data.items) {
 <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
 </head><body>`;
 
-const body = `
+  const body = `
 ${headerHTML || ""}
 <main class="article">
   <h1>${esc(f.title || "Untitled")}</h1>
@@ -189,14 +205,14 @@ ${footerHTML || ""}
 <script src="/FAQscript.js"></script>
 </body></html>`;
 
-
   fs.writeFileSync(path.join(dir, "index.html"), head + body);
+  console.log("Wrote article page:", `/news/${slug}/index.html`);
 }
 
 // -------- sitemap.xml --------
 const urls = [
   "https://esegames.com/NEWS.html",
-  ...data.items.map(it => {
+  ...(data.items || []).map(it => {
     const f = it.fields || {};
     const slug = f.slug ? slugify(f.slug) : slugify(f.title || it.sys.id);
     return `https://esegames.com/news/${slug}/`;
@@ -208,6 +224,6 @@ const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 ${urls.map(u => `<url><loc>${u}</loc><lastmod>${today}</lastmod></url>`).join("\n")}
 </urlset>`;
 fs.writeFileSync("sitemap.xml", sitemap);
+console.log("Wrote sitemap.xml with", urls.length, "URLs");
 
-console.log("News built:", data.items.length);
-
+console.log("News built complete. Items:", data.items?.length || 0);
