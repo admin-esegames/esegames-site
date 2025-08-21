@@ -1,0 +1,150 @@
+/* Scope FAQ-specific styles under #faqPopup */
+
+/* Basic Body and Button Styling */
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #011015;
+    color: white;
+    text-align: center;
+}
+
+button {
+    font-size: 1.2rem;
+    padding: 10px 20px;
+    background-color: #011015;
+    color: white;
+    border: 2px solid white;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: white;
+    color: #011015;
+}
+
+/* Popup Styles */
+.popup {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+#faqPopup .popup-content {
+    background: url('images/DarkTheme.webp') no-repeat center center/cover;
+    width: 80%;
+    max-width: 900px;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: left;
+    background-color: #011015;
+    color: white;
+    position: relative;
+    overflow-y: auto;
+    max-height: 90vh;
+}
+
+#faqPopup h1 {
+    text-align: center;
+    font-weight: 700;
+    font-size: 2rem;
+    color: white;
+    margin-bottom: 20px;
+}
+
+#faqPopup .faq-container {
+    margin-top: 20px;
+}
+
+/* FAQ Item Styles */
+#faqPopup .faq-item {
+    margin-bottom: 20px;  /* More space between each item */
+    padding: 15px;        /* More padding for a comfortable look */
+    background-color: #1a1a1a; /* Darker background for each FAQ item */
+    border-radius: 8px;
+}
+
+/* FAQ Question Styling */
+#faqPopup .faq-question {
+    font-size: 1.3rem;  /* Make questions larger for visibility */
+    font-weight: 600;   /* Bold, but slightly less heavy than before */
+    color: #ffffff;     /* Keep white color */
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* FAQ Answer Styling */
+#faqPopup .faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    font-size: 1.1rem; /* Slightly larger for better readability */
+    font-weight: 300;
+    color: #e1e1e1;  /* A lighter shade for contrast */
+    transition: max-height 0.5s ease, opacity 0.5s ease;
+    opacity: 0;
+    margin-top: 10px;
+    line-height: 1.6;  /* Increase line-height for better readability */
+}
+
+/* Toggle answer visibility */
+#faqPopup .faq-answer.open {
+    max-height: 200px;  /* Increased max height for longer answers */
+    opacity: 1;
+}
+
+/* Hover effect for the FAQ question */
+#faqPopup .faq-item:hover .faq-question {
+    color: #01a9ac;  /* Change color to match the accent */
+}
+
+/* Plus Icon Styling */
+#faqPopup .plus-icon {
+    font-size: 1.5rem;
+    transition: transform 0.3s ease; /* Rotate animation */
+}
+
+#faqPopup .plus-icon.open {
+    transform: rotate(45deg); /* Turn into an "X" when open */
+}
+
+/* Close button */
+#faqPopup .close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 2rem;
+    cursor: pointer;
+    color: white;
+}
+
+@media (max-width: 768px) {
+    #faqPopup .popup-content {
+        width: 95%;
+    }
+}
+
+#faqPopup .popup-content .faq-heading {
+    text-align: center !important;
+    font-weight: 700 !important;
+    font-size: 2rem !important;
+    color: white !important;
+    margin-bottom: 20px !important;
+}
+
+.faq-button {
+    border: none; /* Removes the border */
+    background: none; /* Removes any background color */
+    color: inherit; /* Ensures the text color matches the surrounding text */
+    padding: 0; /* Removes any default padding */
+    font: inherit; /* Inherits the font from the surrounding text */
+    cursor: pointer; /* Keeps the pointer for a clickable element */
+}
